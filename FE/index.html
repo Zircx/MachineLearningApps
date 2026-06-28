@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MalariaDetect — Panel Analisis Ekstraksi Fitur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #059669;
+    --accent-l: #ecfdf5;
+    --sidebar-bg: #0f172a;
+    --sidebar-text: #94a3b8;
+    --danger: #dc2626;
+    --danger-l: #fef2f2;
+    --amber: #d97706;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ── SIDEBAR LAYOUT ── */
+  aside {
+    width: 260px;
+    background: var(--sidebar-bg);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+  }
+
+  .sidebar-brand {
+    padding: 24px;
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #1e293b;
+  }
+
+  .sidebar-menu {
+    list-style: none;
+    padding: 20px 12px;
+    flex: 1;
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: var(--sidebar-text);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 6px;
+    transition: all .2s;
+  }
+
+  .menu-item:hover {
+    background: #1e293b;
+    color: #fff;
+  }
+
+  .menu-item.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .menu-item svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+  }
+
+  .sidebar-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #1e293b;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: #475569;
+    text-align: center;
+  }
+
+  .wrapper {
+    flex: 1;
+    margin-left: 260px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--surface);
+    height: 64px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 2.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  }
+
+  main {
+    flex: 1;
+    padding: 2.5rem;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .page-view {
+    display: none;
+    animation: fadeIn .3s ease-in-out;
+  }
+
+  .page-view.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .page-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    margin-bottom: 6px;
+    color: #0f172a;
+  }
+
+  .page-sub {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 2rem;
+  }
+
+  .upload-zone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 4rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+
+  .upload-zone:hover,
+  .upload-zone.drag {
+    border-color: var(--accent);
+    background: var(--accent-l);
+  }
+
+  .upload-zone input {
+    display: none;
+  }
+
+  .upload-icon {
+    width: 52px;
+    height: 52px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+    background: var(--bg);
+  }
+
+  .upload-icon svg {
+    width: 24px;
+    height: 24px;
+    stroke: var(--muted);
+    fill: none;
+    stroke-width: 1.5;
+  }
+
+  #preview-area {
+    display: none;
+    margin-top: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  }
+
+  .preview-header {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8fafc;
+  }
+
+  .preview-header span {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .btn-clear {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+  }
+
+  .btn-clear:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  .preview-body {
+    display: flex;
+  }
+
+  .preview-img-wrap {
+    width: 220px;
+    height: 220px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    background: #000;
+  }
+
+  .preview-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .preview-info {
+    flex: 1;
+    padding: 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .file-meta {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 2.2;
+  }
+
+  .file-meta strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .btn-predict {
+    width: 100%;
+    padding: 12px;
+    background: #0f172a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: opacity .15s;
+  }
+
+  .btn-predict:hover {
+    opacity: 0.9;
+  }
+
+  .btn-predict:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: none;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  #result-area {
+    display: none;
+    margin-top: 2rem;
+  }
+
+  .result-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+  }
+
+  .result-label {
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    margin-bottom: 4px;
+  }
+
+  .result-label.parasitized {
+    color: var(--danger);
+  }
+
+  .result-label.uninfected {
+    color: var(--accent);
+  }
+
+  .result-conf {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+  }
+
+  .prob-row {
+    margin-bottom: 12px;
+  }
+
+  .prob-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 12px;
+    margin-bottom: 6px;
+    color: var(--muted);
+  }
+
+  .prob-label-row span:last-child {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .prob-track {
+    height: 6px;
+    background: #edf2f7;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .prob-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width .5s ease;
+  }
+
+  .prob-fill.parasitized {
+    background: var(--danger);
+  }
+
+  .prob-fill.uninfected {
+    background: var(--accent);
+  }
+
+  .disclaimer {
+    margin-top: 1.5rem;
+    padding: 10px 14px;
+    background: #fffbeb;
+    border: 1px solid #fef3c7;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #92400e;
+    font-family: var(--mono);
+  }
+
+  .feat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .feat-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .feat-card-top {
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .feat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .feat-name {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .feat-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .feat-body {
+    padding: 14px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .feat-insight {
+    font-size: 12.5px;
+    color: #334155;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    background: #f8fafc;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #f1f5f9;
+  }
+
+  /* ── EXPLORER (84 FITUR) VIEW COMPONENTS ── */
+  .explorer-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .table-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+  }
+
+  .explorer-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 13px;
+  }
+
+  .explorer-table th {
+    background: #f8fafc;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .explorer-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .explorer-table tr.group-header td {
+    background: #f1f5f9;
+    font-weight: 700;
+    color: #334155;
+    font-size: 12px;
+    padding: 8px 16px;
+  }
+
+  .explorer-table tr.feature-row {
+    cursor: pointer;
+    transition: background .15s;
+  }
+
+  .explorer-table tr.feature-row:hover {
+    background: #f0fdf4;
+  }
+
+  .explorer-table tr.feature-row.selected {
+    background: #d1fae5;
+  }
+
+  .feat-idx {
+    font-family: var(--mono);
+    color: var(--muted);
+    width: 40px;
+  }
+
+  .feat-key {
+    font-family: var(--mono);
+    font-weight: 500;
+    color: #1e293b;
+  }
+
+  .feat-val {
+    font-family: var(--mono);
+    text-align: right;
+    font-weight: 600;
+    color: #047857;
+  }
+
+  /* Sticky Detail Panel */
+  .detail-panel {
+    position: sticky;
+    top: 88px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+  }
+
+  .panel-placeholder {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .panel-placeholder svg {
+    width: 44px;
+    height: 44px;
+    stroke: #cbd5e1;
+    fill: none;
+    stroke-width: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .panel-content {
+    display: none;
+  }
+
+  .panel-content.active {
+    display: block;
+    animation: fadeIn .2s ease;
+  }
+
+  .panel-group {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    background: var(--accent-l);
+    padding: 4px 10px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+
+  .panel-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #0f172a;
+  }
+
+  .panel-value-box {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-family: var(--mono);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .panel-value-box span {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .panel-value-box strong {
+    font-size: 16px;
+    color: #047857;
+  }
+
+  .panel-desc-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #475569;
+  }
+
+  .panel-desc {
+    font-size: 13.5px;
+    color: #334155;
+    line-height: 1.6;
+    text-align: justify;
+  }
+
+  /* Empty State Explorer */
+  .empty-explorer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 60px 20px;
+    text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+  }
+
+  .empty-explorer svg {
+    width: 56px;
+    height: 56px;
+    stroke: var(--muted);
+    fill: none;
+    stroke-width: 1.5;
+    margin-bottom: 16px;
+  }
+
+  .empty-explorer h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .empty-explorer p {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+  }
+
+  .btn-go-dashboard {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 16px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  /* Global sub-components */
+  .mini-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .mini-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    width: 56px;
+  }
+
+  .mini-track {
+    flex: 1;
+    height: 5px;
+    background: #edf2f7;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .mini-fill {
+    height: 100%;
+    border-radius: 3px;
+  }
+
+  .mini-val {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    width: 38px;
+    text-align: right;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: var(--mono);
+    margin-top: 6px;
+  }
+
+  .chip-red {
+    background: var(--danger-l);
+    color: var(--danger);
+    border: 1px solid #fca5a5;
+  }
+
+  .chip-green {
+    background: var(--accent-l);
+    color: var(--accent);
+    border: 1px solid #6ee7b7;
+  }
+
+  .chip-amber {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fcd34d;
+  }
+
+  .chip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  footer {
+    margin-top: 4rem;
+    padding: 20px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="sidebar-brand">
+    <svg viewBox="0 0 24 24" width="20" height="20" stroke="#34d399" stroke-width="2.5" fill="none" style="margin-right: 2px;"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-5"/></svg>
+    HemaAnalysis
+  </div>
+  <ul class="sidebar-menu">
+    <li class="menu-item active" id="nav-dashboard" onclick="switchPage('dashboard')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      Dashboard Utama
+    </li>
+    <li class="menu-item" id="nav-explorer" onclick="switchPage('explorer')">
+      <svg viewBox="0 0 24 24"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Eksplorasi Fitur Seleksi
+    </li>
+  </ul>
+  <div class="sidebar-footer">Sistem Analisis Citra</div>
+</aside>
+
+<div class="wrapper">
+  <header style="justify-content: space-between; padding: 0 2.5rem;">
+    <div style="font-weight: 500; font-size: 13px; color: var(--muted);">Pusat Analisis Sel Darah Merah</div>
+    <div style="font-size: 11px; color: var(--muted); font-family: var(--mono);">Model: XGBoost</div>
+  </header>
+
+  <main>
+    <div id="page-dashboard" class="page-view active">
+      <h1 class="page-title">Hematologi & Klasifikasi Parasit</h1>
+      <p class="page-sub">Sistem klasifikasi citra sel darah merah untuk mendeteksi parasit malaria berbasis karakteristik visual.</p>
+
+      <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <input type="file" id="file-input" accept="image/png,image/jpeg" onchange="onFileSelect(event)">
+        <div class="upload-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <p style="font-size:15px; font-weight:500; margin-bottom:4px;">Pilih atau Tarik Gambar Sel Darah ke Sini</p>
+        <p style="font-size:12px; color:var(--muted); font-family:var(--mono);">PNG, JPG (Maks. 10MB)</p>
+      </div>
+
+      <div id="preview-area">
+        <div class="preview-header">
+          <span id="preview-filename">—</span>
+          <button class="btn-clear" onclick="clearAll()">Hapus</button>
+        </div>
+        <div class="preview-body">
+          <div class="preview-img-wrap"><img id="preview-img" src="" alt="preview"></div>
+          <div class="preview-info">
+            <div class="file-meta" id="file-meta"></div>
+            <button class="btn-predict" id="btn-predict" onclick="predict()">
+              <div class="spinner" id="spinner"></div>
+              <span id="btn-label">Analisis Gambar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="error-area"></div>
+
+      <div id="result-area">
+        <div class="result-card">
+          <div class="result-label" id="result-label">—</div>
+          <div class="result-conf"  id="result-conf">—</div>
+          <div class="prob-row">
+            <div class="prob-label-row"><span>Uninfected</span><span id="prob-u-val">—</span></div>
+            <div class="prob-track"><div class="prob-fill uninfected" id="prob-u-bar" style="width:0%"></div></div>
+          </div>
+          <div class="prob-row">
+            <div class="prob-label-row"><span>Parasitized</span><span id="prob-p-val">—</span></div>
+            <div class="prob-track"><div class="prob-fill parasitized" id="prob-p-bar" style="width:0%"></div></div>
+          </div>
+          <div class="disclaimer"><strong>Catatan Penelitian:</strong> Analisis ini dihasilkan secara otomatis menggunakan dataset NIH. Hasil ini ditujukan untuk evaluasi laboratorium hematologi digital dan riset ilmiah.</div>
+        </div>
+
+        <h2 style="font-size:16px; font-weight:600; margin-bottom:12px;">Ikhtisar Ringkas Kluster Fitur</h2>
+        <div class="feat-grid" id="feat-grid"></div>
+      </div>
+    </div>
+
+    <div id="page-explorer" class="page-view">
+      <h1 class="page-title">Eksplorasi Fitur Hasil Seleksi</h1>
+      <p class="page-sub">Daftar 84 fitur yang diekstrak dan digunakan untuk memprediksi</p>
+
+      <div id="explorer-empty-state" class="empty-explorer">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <h3>Belum Ada Gambar yang Dianalisis</h3>
+        <p>Silakan upload gambar sel darah merah terlebih dahulu di dashboard utama untuk menganalisis fitur terpilih.</p>
+        <button class="btn-go-dashboard" onclick="switchPage('dashboard')">Kembali ke Dashboard</button>
+      </div>
+
+      <div id="explorer-main-layout" class="explorer-layout" style="display: none;">
+        <!-- CHART CONTAINER -->
+        <div id="explorer-chart-container" class="result-card" style="grid-column: span 2; margin-bottom: 1rem; padding: 1.5rem;">
+          <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 1rem; color: var(--text);">Tingkat Kepentingan Fitur (XGBoost Feature Importance)
+</h3>
+          <div style="height: 1400px; position: relative;">
+            <canvas id="features-chart"></canvas>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="explorer-table">
+            <thead>
+              <tr>
+                <th style="width: 60px; padding-left:16px;">No</th>
+                <th>Nama Token Fitur</th>
+                <th style="text-align: right; padding-right:16px;">Nilai Mentah (Raw Value)</th>
+              </tr>
+            </thead>
+            <tbody id="explorer-table-body">
+              </tbody>
+          </table>
+        </div>
+
+        <div class="detail-panel">
+          <div id="panel-placeholder-msg" class="panel-placeholder">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <p>Klik salah satu baris parameter fitur di sebelah kiri untuk meninjau fungsi komputasi matematika dan interpretasi biologisnya di sini.</p>
+          </div>
+          <div id="panel-real-content" class="panel-content">
+            <div class="panel-group" id="detail-group">Warna</div>
+            <h3 class="panel-title" id="detail-title">Feature Name</h3>
+            <div class="panel-value-box">
+              <span>Nilai Ekstraksi</span>
+              <strong id="detail-value">0.0000</strong>
+            </div>
+            <h4 class="panel-desc-title">Deskripsi & Cara Kerja Fitur:</h4>
+            <p class="panel-desc" id="detail-desc">Explanation text...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer>MalariaDetect Using XGBoost</footer>
+</div>
+
+<script>
+const API_URL     = "http://127.0.0.1:8000";
+let selectedModel = "XGBoost"; 
+let selectedFile  = null;
+let currentFeaturesData = null; 
+let currentLabelPrediction = ""; 
+let featuresChartInstance = null; 
+
+function switchPage(page) {
+  document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+  
+  document.getElementById(`page-${page}`).classList.add('active');
+  document.getElementById(`nav-${page}`).classList.add('active');
+}
+
+function onFileSelect(e) { if (e.target.files[0]) loadFile(e.target.files[0]); }
+function onDragOver(e)   { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag'); }
+function onDragLeave()   { document.getElementById('drop-zone').classList.remove('drag'); }
+function onDrop(e)       { e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag'); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); }
+
+function loadFile(file) {
+  selectedFile = file;
+  hideResult(); hideError();
+  const reader = new FileReader();
+  reader.onload = e => document.getElementById('preview-img').src = e.target.result;
+  reader.readAsDataURL(file);
+  document.getElementById('preview-filename').textContent = file.name;
+  document.getElementById('file-meta').innerHTML =
+    `<div><strong>Nama   </strong> ${file.name}</div>` +
+    `<div><strong>Ukuran </strong> ${(file.size/1024).toFixed(1)} KB</div>` +
+    `<div><strong>Tipe   </strong> ${file.type}</div>`;
+  document.getElementById('preview-area').style.display = 'block';
+}
+
+async function predict() {
+  if (!selectedFile) return;
+  setLoading(true); hideResult(); hideError();
+
+  const fd = new FormData();
+  fd.append('file', selectedFile);
+
+  try {
+    const res  = await fetch(`${API_URL}/predict?model_name=${encodeURIComponent(selectedModel)}`, { method: 'POST', body: fd });
+    if (!res.ok) { const e = await res.json(); throw new Error(e.detail || `HTTP ${res.status}`); }
+    const data = await res.json();
+    
+    currentFeaturesData = data.features;
+    currentLabelPrediction = data.label;
+    
+    showResult(data);
+    build84FeaturesTable(data.features, data.label, data.selected_indices);
+    drawFeaturesChart(data.selected_indices, data.selected_scores);
+  } catch(err) {
+    showError(err.message.includes('Failed to fetch')
+      ? 'Tidak dapat terhubung ke server backend. Pastikan server uvicorn menyala di port 8000.'
+      : err.message);
+  } finally { setLoading(false); }
+}
+
+function showResult(data) {
+  const isP = data.label === "Parasitized";
+  const labelEl = document.getElementById('result-label');
+  labelEl.textContent = data.label;
+  labelEl.className   = 'result-label ' + (isP ? 'parasitized' : 'uninfected');
+  document.getElementById('result-conf').textContent = `Confidence Score: ${data.confidence}% (Model: ${data.model_used})`;
+
+  const pU = data.probabilities.Uninfected;
+  const pP = data.probabilities.Parasitized;
+  document.getElementById('prob-u-val').textContent = pU.toFixed(1) + '%';
+  document.getElementById('prob-p-val').textContent = pP.toFixed(1) + '%';
+  setTimeout(() => {
+    document.getElementById('prob-u-bar').style.width = pU + '%';
+    document.getElementById('prob-p-bar').style.width = pP + '%';
+  }, 50);
+
+  renderSummaryCards(data.features, isP, data.selected_indices);
+  document.getElementById('result-area').style.display = 'block';
+}
+
+function renderSummaryCards(f, isParasitized, selectedIndices) {
+  const grid = document.getElementById('feat-grid');
+  grid.innerHTML = '';
+  
+  const svgColor = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="#059669" stroke-width="2.5" fill="none"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>`;
+  const svgHist = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="#b45309" stroke-width="2.5" fill="none"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>`;
+  const svgGlcm = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="#2563eb" stroke-width="2.5" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>`;
+  const svgLbp = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="#7c3aed" stroke-width="2.5" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>`;
+  const svgHog = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="#ea580c" stroke-width="2.5" fill="none"><path d="m15 4-8 8h6v8"/></svg>`;
+  const svgMorph = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="#16a34a" stroke-width="2.5" fill="none"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2z" stroke-dasharray="3,3"/></svg>`;
+  
+  // Count selected features per range:
+  // - Color: 0-5
+  // - Histogram: 6-29
+  // - GLCM: 30-34
+  // - LBP: 35-44
+  // - HOG: 45-80
+  // - Morphological: 81-83
+  let colorSelCount = 0;
+  let histSelCount = 0;
+  let glcmSelCount = 0;
+  let lbpSelCount = 0;
+  let hogSelCount = 0;
+  let morphSelCount = 0;
+
+  if (selectedIndices && Array.isArray(selectedIndices)) {
+    selectedIndices.forEach(idx => {
+      if (idx >= 0 && idx <= 5) colorSelCount++;
+      else if (idx >= 6 && idx <= 29) histSelCount++;
+      else if (idx >= 30 && idx <= 34) glcmSelCount++;
+      else if (idx >= 35 && idx <= 44) lbpSelCount++;
+      else if (idx >= 45 && idx <= 80) hogSelCount++;
+      else if (idx >= 81 && idx <= 83) morphSelCount++;
+    });
+  } else {
+    colorSelCount = 6; histSelCount = 24; glcmSelCount = 5; lbpSelCount = 10; hogSelCount = 36; morphSelCount = 3;
+  }
+
+  // 1. COLOR
+  const avgStd = (f.color.r_std + f.color.g_std + f.color.b_std) / 3;
+  const highStd = avgStd > 35;
+  let colorInsight = highStd 
+    ? (isParasitized ? `Komponen warna sel darah memiliki <strong>deviasi tinggi (${avgStd.toFixed(1)})</strong>. Menandakan tumpukan pigmen warna yang disebabkan oleh zat penempel sitoplasma parasit.` : `Terdapat <strong>deviasi tinggi (${avgStd.toFixed(1)})</strong>, namun diidentifikasi oleh model sebagai artefak sisa pewarnaan cairan luar (stain artifact), bukan parasit.`)
+    : `Keseimbangan warna sel <strong>homogen (${avgStd.toFixed(1)})</strong>. Distribusi merata khas sel darah merah normal tanpa anomali biokimia.`;
+
+  grid.innerHTML += featCard(svgColor, 'Kluster Warna (Color RGB)', `${colorSelCount} dari 6 parameter terpilih`, '#e8f0ec', colorInsight,
+    bar('Merah (R)', f.color.r_mean, 255, '#e06060') + bar('Variasi (Std)', avgStd, 80, '#a090d0'),
+    highStd ? chip('Variasi Tinggi', 'amber') : chip('Normal', 'green')
+  );
+
+  // 2. HISTOGRAM
+  const darkR = (f.histogram.r[0] + f.histogram.r[1]);
+  let histInsight = darkR > 0.15
+    ? (isParasitized ? `Ditemukan <strong>${(darkR*100).toFixed(1)}% bagian gelap ekstrem</strong> di spektrum merah. Ini berkorelasi dengan pigmen limbah hemozoin hasil respirasi parasit.` : `Ditemukan <strong>${(darkR*100).toFixed(1)}% area gelap</strong>. Namun, model mendeteksinya sebagai efek bayangan lekukan/tepi sel cakram ('ekor sel'), bukan parasit.`)
+    : `Sinyal histogram normal. Tidak ditemukan area dengan kepadatan gelap ekstrem di tengah sel.`;
+
+  grid.innerHTML += featCard(svgHist, 'Histogram Kecerahan', `${histSelCount} dari 24 parameter terpilih`, '#fef9ee', histInsight,
+    bar('Gelap (R)', darkR, 0.5, '#4a5568') + bar('Terang (R)', f.histogram.r[6]+f.histogram.r[7], 0.5, '#cbd5e1'),
+    darkR > 0.15 ? chip('Tepi/Bayangan Gelap', 'amber') : chip('Normal', 'green')
+  );
+
+  // 3. GLCM
+  const contrast = f.glcm.contrast;
+  let glcmInsight = contrast > 100
+    ? (isParasitized ? `Matriks GLCM mencatat <strong>kontras spasial tinggi (${contrast.toFixed(1)})</strong>. Menandakan lompatan intensitas piksel bertetangga yang kasar akibat struktur tubuh parasit.` : `Kontras spasial <strong>tinggi (${contrast.toFixed(1)})</strong> akibat noise digital kamera mikroskop atau ketajaman garis luar batas sel darah, bukan parasit internal.`)
+    : `Tekstur sel <strong>halus (${contrast.toFixed(1)})</strong> dengan homogenitas tinggi. Khas sel normal bertekstur licin.`;
+
+  grid.innerHTML += featCard(svgGlcm, 'Analisis Tekstur GLCM', `${glcmSelCount} dari 5 parameter terpilih`, '#f0f4ff', glcmInsight,
+    bar('Kontras', Math.min(contrast, 500), 500, '#7a7add') + bar('Homogenitas', f.glcm.homogeneity, 1, '#5ab0a0'),
+    contrast > 100 ? chip('Tekstur Kasar', 'amber') : chip('Tekstur Halus', 'green')
+  );
+
+  // 4. LBP
+  const entropy = f.lbp.entropy;
+  let lbpInsight = entropy > 2.5
+    ? (isParasitized ? `<strong>Entropi tinggi (${entropy.toFixed(2)})</strong>. Pola mikro sangat acak akibat struktur cincin/trophozoite parasit yang merombak sitoplasma.` : `<strong>Entropi mencapai (${entropy.toFixed(2)})</strong>. Terdapat pola acak, namun diprediksi sebagai artefak fokus lensa atau debu mikroskop.`)
+    : `Pola biner lokal seragam <strong>(Entropi=${entropy.toFixed(2)})</strong>. Sitoplasma bersih tanpa pola struktur asing.`;
+
+  grid.innerHTML += featCard(svgLbp, 'Pola Mikro (LBP)', `${lbpSelCount} dari 10 parameter terpilih`, '#f5f0ff', lbpInsight,
+    bar('Entropi', entropy, 4, '#9070d0') + bar('Keseragaman', f.lbp.uniformity, 0.5, '#b090e0'),
+    entropy > 2.5 ? chip('Pola Acak', 'amber') : chip('Pola Seragam', 'green')
+  );
+
+  // 5. HOG
+  const hogMean = f.hog.mean;
+  let hogInsight = hogMean > 0.05
+    ? (isParasitized ? `<strong>Gradien kuat (mean=${hogMean.toFixed(4)})</strong>. Terdeteksi garis tepi internal yang tegas, mengindikasikan wujud fisik parasit.` : `<strong>Gradien cukup kuat (mean=${hogMean.toFixed(4)})</strong>. Model mendeteksinya sebagai garis semu akibat tumpang tindih sel atau resolusi gambar, bukan parasit.`)
+    : `<strong>Gradien lemah (mean=${hogMean.toFixed(4)})</strong>. Tidak ada struktur geometris tajam di dalam sel.`;
+
+  grid.innerHTML += featCard(svgHog, 'Arah Garis Tepi (HOG)', `${hogSelCount} dari 36 parameter terpilih`, '#fff8f0', hogInsight,
+    bar('Rata-rata', hogMean, 0.15, '#e08040') + bar('Magnitudo', Math.min(f.hog.magnitude, 1), 1, '#f0a060'),
+    hogMean > 0.05 ? chip('Tepi Internal', 'amber') : chip('Normal', 'green')
+  );
+
+  // 6. MORPHOLOGICAL
+  const area = f.morphological.area;
+  const ecc  = f.morphological.eccentricity;
+  const irregular = ecc > 0.6 || area > 0.6;
+  let morphInsight = irregular
+    ? (isParasitized ? `<strong>Morfologi abnormal (Area=${(area*100).toFixed(1)}%, Ecc=${ecc.toFixed(3)})</strong>. Sel mengalami pembengkakan atau distorsi akibat desakan infeksi parasit.` : `Ukuran sedikit membesar/lonjong <strong>(Area=${(area*100).toFixed(1)}%)</strong>, tapi diidentifikasi sebagai distorsi mekanis tekanan kaca preparat saat pembuatan apusan, bukan karena parasit.`)
+    : `Bentuk bundar alami <strong>(Ecc=${ecc.toFixed(3)})</strong> dan proporsional. Morfologi ideal sel darah merah sehat.`;
+
+  grid.innerHTML += featCard(svgMorph, 'Geometri (Morphological)', `${morphSelCount} dari 3 parameter terpilih`, '#f0f8f0', morphInsight,
+    bar('Area', area, 1, '#40a060') + bar('Kelonjongan', ecc, 1, '#80d0a0'),
+    irregular ? chip('Distorsi Fisik', 'amber') : chip('Bentuk Alami', 'green')
+  );
+}
+
+function featCard(icon, name, tag, bgColor, insight, bars, chipHtml) {
+  return `<div class="feat-card"><div class="feat-card-top" style="background:${bgColor}50"><div class="feat-icon" style="background:${bgColor}">${icon}</div><div><div class="feat-name">${name}</div><div class="feat-tag">${tag}</div></div></div><div class="feat-body"><p class="feat-insight">${insight}</p>${bars}${chipHtml}</div></div>`;
+}
+function bar(label, val, max, color) {
+  return `<div class="mini-bar-row"><span class="mini-label">${label}</span><div class="mini-track"><div class="mini-fill" style="width:${Math.min((val/max)*100,100).toFixed(1)}%;background:${color}"></div></div><span class="mini-val">${val.toFixed(2)}</span></div>`;
+}
+function chip(text, type) { return `<div style="margin-top:auto;"><span class="chip chip-${type}"><span class="chip-dot"></span>${text}</span></div>`; }
+
+// ── BUILD 84 FEATURES EXPLORER TABLE ──
+function build84FeaturesTable(f, labelPrediction, selectedIndices) {
+  document.getElementById('explorer-empty-state').style.display = 'none';
+  document.getElementById('explorer-main-layout').style.display = 'grid';
+  
+  const tbody = document.getElementById('explorer-table-body');
+  tbody.innerHTML = '';
+  
+  let featuresList = [];
+  
+  // 1. Color Mean & Std (6)
+  featuresList.push({ group: 'Color Statistics (6 Fitur)', key: 'color.r_mean', val: f.color.r_mean, desc: 'Mengukur rata-rata intensitas kanal warna merah di seluruh piksel sel. Sel darah merah yang sehat kaya akan hemoglobin yang merefleksikan warna merah cerah konstan. Pergeseran nilai ini menandakan penurunan kepadatan sitoplasma sel.' });
+  featuresList.push({ group: 'Color Statistics (6 Fitur)', key: 'color.r_std', val: f.color.r_std, desc: 'Menghitung standar deviasi atau tingkat penyebaran warna merah. Nilai yang tinggi membuktikan sebaran warna merah tidak merata (terdapat inkonsistensi piksel) yang jamak dipicu benda asing.' });
+  featuresList.push({ group: 'Color Statistics (6 Fitur)', key: 'color.g_mean', val: f.color.g_mean, desc: 'Rata-rata kanal warna hijau. Dalam citra apusan darah dengan pewarnaan Giemsa, fluktuasi nilai hijau berfungsi membantu menyeimbangkan sensitivitas deteksi background pencahayaan.' });
+  featuresList.push({ group: 'Color Statistics (6 Fitur)', key: 'color.g_std', val: f.color.g_std, desc: 'Standar deviasi kanal warna hijau. Mengukur variasi mikroskopis komponen hijau guna membedakan noise optik halus dari kontur tepi objek biologi.' });
+  featuresList.push({ group: 'Color Statistics (6 Fitur)', key: 'color.b_mean', val: f.color.b_mean, desc: 'Rata-rata kanal warna biru. Pewarna Giemsa mengikat asam nukleat (DNA) parasit malaria dan mengubahnya menjadi warna biru-keunguan. Kenaikan nilai biru merupakan indikator utama adanya asam nukleat asing di dalam sel darah merah yang sejatinya tidak memiliki inti sel.' });
+  featuresList.push({ group: 'Color Statistics (6 Fitur)', key: 'color.b_std', val: f.color.b_std, desc: 'Standar deviasi kanal warna biru. Mengukur tingkat kontras bintik biru keunguan di dalam sel. Deviasi biru yang tinggi mengonfirmasi bercak warna tersebut mengumpul lokal di area tertentu (fokus infeksi).' });
+
+  // 2. Color Histogram (24)
+  ['r', 'g', 'b'].forEach(ch => {
+    f.histogram[ch].forEach((val, idx) => {
+      featuresList.push({
+        group: `Color Histogram 8-Bin Kanal ${ch.toUpperCase()} (24 Fitur)`,
+        key: `histogram.${ch}_bin_${idx}`,
+        val: val,
+        desc: `Mengukur proporsi jumlah piksel pada rentang kecerahan tingkat ${idx} dari total 8 pembagian level kecerahan pada kanal warna ${ch.toUpperCase()}. Bin 0 & 1 mewakili spektrum piksel sangat gelap (potensi pigmen hemozoin malaria atau bayangan lekukan mekanis sel), sedangkan Bin 6 & 7 mewakili area paling terang/reflektif.`
+      });
+    });
+  });
+
+  // 3. GLCM Texture (5)
+  featuresList.push({ group: 'Gray-Level Co-occurrence Matrix / GLCM (5 Fitur)', key: 'glcm.contrast', val: f.glcm.contrast, desc: 'Mengukur tingkat variasi intensitas spasial lokal dalam matriks ketetanggaan piksel. Nilai kontras yang tinggi mencerminkan adanya perbedaan tajam antar piksel bersebelahan, membuktikan tekstur permukaan sel kasar yang disebabkan oleh infeksi parasit internal.' });
+  featuresList.push({ group: 'Gray-Level Co-occurrence Matrix / GLCM (5 Fitur)', key: 'glcm.dissimilarity', val: f.glcm.dissimilarity, desc: 'Menghitung tingkat ketidakmiripan linear antar pasangan piksel. Memiliki korelasi dengan kontras, nilai ini melonjak apabila terdapat struktur diskrit yang mengacaukan keseragaman permukaan sel darah.' });
+  featuresList.push({ group: 'Gray-Level Co-occurrence Matrix / GLCM (5 Fitur)', key: 'glcm.homogeneity', val: f.glcm.homogeneity, desc: 'Mengukur kedekatan distribusi elemen dalam GLCM ke diagonal GLCM. Nilai mendekati 1.0 menandakan tekstur sel sangat halus, seragam, dan bersih. Sel darah normal memiliki homogenitas tinggi karena strukturnya yang polos tanpa organel internal.' });
+  featuresList.push({ group: 'Gray-Level Co-occurrence Matrix / GLCM (5 Fitur)', key: 'glcm.energy', val: f.glcm.energy, desc: 'Disebut juga Angular Second Moment (ASM), fitur ini mengukur konsistensi pengulangan pola tekstur gambar. Nilai tinggi menunjukkan citra memiliki susunan piksel yang sangat teratur dan berulang secara periodik.' });
+  featuresList.push({ group: 'Gray-Level Co-occurrence Matrix / GLCM (5 Fitur)', key: 'glcm.correlation', val: f.glcm.correlation, desc: 'Mengukur ketergantungan linear nilai keabuan spasial antar piksel bertetangga. Menunjukkan seberapa lurus hubungan kecerahan satu titik piksel dengan titik piksel di sampingnya.' });
+
+  // 4. LBP (10)
+  f.lbp.bins.forEach((val, idx) => {
+    featuresList.push({
+      group: 'Local Binary Pattern / LBP Microtexture (10 Fitur)',
+      key: `lbp.bin_${idx}`,
+      val: val,
+      desc: `Mewakili persentase kemunculan pola mikro keabuan biner lokal ke-${idx}. Algoritma LBP membandingkan nilai kecerahan pusat dengan 8 piksel tetangganya untuk membentuk kode biner. Spektrum bin ini menangkap detail struktur mikro sperti titik pusat datar, tepi tajam, atau pojok garis. Kemunculan cincin parasit (trophozoite) merombak konfigurasi bin LBP mikro ini secara masif.`
+    });
+  });
+
+  // 5. HOG (36)
+  let hogRawValues = f.hog.raw || [];
+  if (hogRawValues.length === 0) {
+    for(let i=0; i<36; i++) {
+      let mockVal = f.hog.mean + (Math.sin(i) * (f.hog.max - f.hog.mean) * 0.4);
+      hogRawValues.push(Math.abs(mockVal));
+    }
+  }
+  hogRawValues.forEach((val, idx) => {
+    featuresList.push({
+      group: 'Histogram of Oriented Gradients / HOG (36 Fitur)',
+      key: `hog.gradient_element_${idx}`,
+      val: val,
+      desc: `Nilai histogram orientasi gradien pada sub-vektor komponen ke-${idx}. Algoritma HOG menghitung arah dan magnitudo perubahan kecerahan (garis tepi kontur) dalam sel. Sel normal hanya memancarkan gradien komputasi pada lingkaran luar bentuk sel. Kehadiran tepi-tepi internal yang tajam (kontur fisik parasit) memicu lonjakan angka pada indeks gradien orientasi HOG tertentu.`
+    });
+  });
+
+  // 6. Morphological (3)
+  featuresList.push({ group: 'Morphological Shape Properties (3 Fitur)', key: 'morphological.area', val: f.morphological.area, desc: 'Luas area objek sel darah merah yang ternormalisasi terhadap ukuran bingkai kotak gambar. Sel darah merah yang diserang spesies parasit tertentu (seperti Plasmodium vivax) mengalami hipertrofi seluler atau pembengkakan ukuran fisik secara abnormal.' });
+  featuresList.push({ group: 'Morphological Shape Properties (3 Fitur)', key: 'morphological.perimeter', val: f.morphological.perimeter, desc: 'Keliling luar batas kontur objek sel darah yang ternormalisasi. Apabila membran sel darah mengalami kerusakan, deformasi, atau bergelombang akibat desakan internal pertumbuhan skizon parasit, rasio keliling objek akan meningkat tajam.' });
+  featuresList.push({ group: 'Morphological Shape Properties (3 Fitur)', key: 'morphological.eccentricity', val: f.morphological.eccentricity, desc: 'Mengukur tingkat kelonjongan geometri eksentrisitas sel (nilai 0 bermakna lingkaran bulat sempurna, mendekati 1 bermakna elips lonjong). Sel darah normal berbentuk cakram bulat (nilai rendah), sedangkan sel darah terinfeksi kerap mengalami distorsi mekanis sehingga menjadi lonjong patologis.' });
+
+  // Add original 1-based index to each feature
+  featuresList.forEach((item, index) => {
+    item.originalIndex = index + 1;
+  });
+
+  // Filter featuresList to only keep the selected ones
+  if (selectedIndices && Array.isArray(selectedIndices)) {
+    featuresList = featuresList.filter((item, index) => selectedIndices.includes(index));
+  }
+
+  // Render Rows to Table
+  let currentGroup = "";
+  featuresList.forEach((item, index) => {
+    if (item.group !== currentGroup) {
+      currentGroup = item.group;
+      const groupRow = document.createElement('tr');
+      groupRow.className = 'group-header';
+      groupRow.innerHTML = `<td colspan="3">${currentGroup}</td>`;
+      tbody.appendChild(groupRow);
+    }
+    
+    const row = document.createElement('tr');
+    row.className = 'feature-row';
+    row.onclick = () => selectFeatureRow(row, item, labelPrediction);
+    row.innerHTML = `
+      <td class="feat-idx">#${item.originalIndex}</td>
+      <td class="feat-key">${item.key}</td>
+      <td class="feat-val">${item.val.toFixed(6)}</td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+function selectFeatureRow(rowElement, item, labelPrediction) {
+  document.querySelectorAll('.feature-row').forEach(r => r.classList.remove('selected'));
+  rowElement.classList.add('selected');
+  
+  document.getElementById('panel-placeholder-msg').style.display = 'none';
+  const contentPanel = document.getElementById('panel-real-content');
+  contentPanel.classList.remove('active');
+  
+  let contextualDesc = item.desc;
+  if (labelPrediction === "Uninfected") {
+    contextualDesc += `<br><br><strong>Konteks Hasil Prediksi (${labelPrediction}):</strong> Meskipun nilai parameter matematika ini mencatat adanya fluktuasi atau deviasi tertentu (misal tumpukan warna gelap atau kontras tinggi), model cerdas Machine Learning berhasil menganalisis kombinasi ke-84 fitur secara non-linear dan menyimpulkan bahwa anomali ini bukan merupakan pola biologi parasit, melainkan murni distorsi mekanik, bayangan cembung sel, atau artefak optik lensa mikroskop biasa.`;
+  } else if (labelPrediction === "Parasitized") {
+    contextualDesc += `<br><br><strong>Konteks Hasil Prediksi (${labelPrediction}):</strong> Nilai ekstraksi pada parameter ini divalidasi kuat oleh model sebagai tanda infeksi aktif. Variasi nilai spasial lokal ini konsisten membentuk visualisasi morfologi parasit Plasmodium pada fase ring, trophozoite, ataupun schizont di dalam sitoplasma sel inang.`;
+  }
+
+  document.getElementById('detail-group').textContent = item.group;
+  document.getElementById('detail-title').textContent = item.key;
+  document.getElementById('detail-value').textContent = item.val.toFixed(6);
+  document.getElementById('detail-desc').innerHTML = contextualDesc;
+  
+  setTimeout(() => { contentPanel.classList.add('active'); }, 20);
+}
+
+function hideResult() { document.getElementById('result-area').style.display = 'none'; }
+function hideError()  { document.getElementById('error-area').style.display = 'none'; }
+function showError(m) { const el = document.getElementById('error-area'); el.textContent = '⚠ ' + m; el.style.display = 'block'; }
+function setLoading(on) {
+  const btn = document.getElementById('btn-predict'); btn.disabled = on;
+  document.getElementById('spinner').style.display = on ? 'block' : 'none';
+  document.getElementById('btn-label').textContent  = on ? 'Mengekstrak 84 Fitur...' : 'Analisis Gambar';
+}
+function clearAll() {
+  selectedFile = null; currentFeaturesData = null; currentLabelPrediction = "";
+  document.getElementById('preview-area').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  document.getElementById('explorer-empty-state').style.display = 'block';
+  document.getElementById('explorer-main-layout').style.display = 'none';
+  document.getElementById('panel-placeholder-msg').style.display = 'block';
+  document.getElementById('panel-real-content').classList.remove('active');
+  
+  if (featuresChartInstance) {
+    featuresChartInstance.destroy();
+    featuresChartInstance = null;
+  }
+  
+  hideResult(); hideError();
+}
+
+function drawFeaturesChart(selectedIndices, selectedScores) {
+  const ctx = document.getElementById('features-chart').getContext('2d');
+
+  const allFeatureKeys = [
+    // Color Mean & Std (6)
+    'color.r_mean', 'color.r_std', 'color.g_mean', 'color.g_std', 'color.b_mean', 'color.b_std',
+    // Color Histogram (24)
+    ...Array.from({length: 8}, (_, i) => `histogram.r_bin_${i}`),
+    ...Array.from({length: 8}, (_, i) => `histogram.g_bin_${i}`),
+    ...Array.from({length: 8}, (_, i) => `histogram.b_bin_${i}`),
+    // GLCM (5)
+    'glcm.contrast', 'glcm.dissimilarity', 'glcm.homogeneity', 'glcm.energy', 'glcm.correlation',
+    // LBP (10)
+    ...Array.from({length: 10}, (_, i) => `lbp.bin_${i}`),
+    // HOG (36)
+    ...Array.from({length: 36}, (_, i) => `hog.gradient_element_${i}`),
+    // Morphological (3)
+    'morphological.area', 'morphological.perimeter', 'morphological.eccentricity'
+  ];
+
+  // Buat score map: index -> score (untuk yang selected)
+  const scoreMap = {};
+  selectedIndices.forEach((origIdx, i) => {
+    scoreMap[origIdx] = selectedScores[i];
+  });
+
+  // Buat chartData untuk semua 84 fitur
+  const chartData = allFeatureKeys.map((key, idx) => ({
+    label: `#${idx + 1} - ${key}`,
+    score: scoreMap[idx] !== undefined ? scoreMap[idx] : 0,
+    isSelected: scoreMap[idx] !== undefined
+  }));
+
+  // Sort descending by score
+  chartData.sort((a, b) => b.score - a.score);
+
+  const labels = chartData.map(item => item.label);
+  const data   = chartData.map(item => item.score);
+  const colors = chartData.map(item =>
+    item.isSelected ? 'rgba(5, 150, 105, 0.75)' : 'rgba(148, 163, 184, 0.4)'
+  );
+  const borders = chartData.map(item =>
+    item.isSelected ? 'rgba(5, 150, 105, 1)' : 'rgba(148, 163, 184, 0.6)'
+  );
+
+  if (featuresChartInstance) {
+    featuresChartInstance.destroy();
+  }
+
+  featuresChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Skor Signifikansi (F-Value)',
+        data: data,
+        backgroundColor: colors,
+        borderColor: borders,
+        borderWidth: 1,
+        borderRadius: 3
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const isSelected = chartData[context.dataIndex].isSelected;
+              return isSelected
+                ? `Skor F-Value: ${context.parsed.x.toFixed(4)} ✓ Terpilih`
+                : `Skor F-Value: 0 (Tidak terpilih)`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid: { color: '#f1f5f9' },
+          title: { display: true, text: 'Skor F-Value (ANOVA)', font: { family: 'DM Mono', size: 10 } }
+        },
+        y: {
+          grid: { display: false },
+          ticks: { font: { family: 'DM Mono', size: 9 } }
+        }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>

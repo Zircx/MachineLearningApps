@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MalariaDetect — Deteksi Parasit Malaria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #f7f6f2;
+    --surface:   #ffffff;
+    --border:    #e2e0d8;
+    --text:      #1a1917;
+    --muted:     #7a7870;
+    --accent:    #1d3a2f;
+    --accent-l:  #e8f0ec;
+    --danger:    #8b1a1a;
+    --danger-l:  #fdf0f0;
+    --mono:      'DM Mono', monospace;
+    --sans:      'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+  }
+
+  main {
+    flex: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 3rem 2rem;
+  }
+
+  .page-title {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .page-sub {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 2.5rem;
+    font-family: var(--mono);
+  }
+
+  .model-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .model-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .model-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .model-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .upload-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: var(--accent-l); }
+  .upload-zone input { display: none; }
+
+  .upload-icon {
+    width: 48px; height: 48px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1rem;
+    background: var(--bg);
+  }
+  .upload-icon svg { width: 22px; height: 22px; stroke: var(--muted); fill: none; stroke-width: 1.5; }
+  .upload-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .upload-hint  { font-size: 13px; color: var(--muted); font-family: var(--mono); }
+
+  #preview-area {
+    display: none;
+    margin-top: 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .preview-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .preview-header span { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .btn-clear {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .btn-clear:hover { border-color: var(--danger); color: var(--danger); }
+  .preview-body {
+    display: flex;
+    gap: 0;
+  }
+  .preview-img-wrap {
+    width: 200px;
+    height: 200px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+    background: #000;
+  }
+  .preview-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .preview-info {
+    flex: 1;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .file-meta { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 2; }
+  .file-meta strong { color: var(--text); font-weight: 500; }
+
+  .btn-predict {
+    width: 100%;
+    margin-top: 1.25rem;
+    padding: 12px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: opacity 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-predict:hover { opacity: 0.88; }
+  .btn-predict:disabled { opacity: 0.45; cursor: not-allowed; }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #result-area {
+    display: none;
+    margin-top: 1.5rem;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    animation: fadeUp 0.3s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .result-header {
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+  }
+  .result-body { background: var(--surface); padding: 1.5rem; }
+
+  .result-label {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .result-label.parasitized { color: var(--danger); }
+  .result-label.uninfected  { color: var(--accent); }
+
+  .result-conf {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 1.25rem;
+  }
+
+  .prob-row { margin-bottom: 10px; }
+  .prob-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 12px;
+    margin-bottom: 5px;
+    color: var(--muted);
+  }
+  .prob-label-row span:last-child { color: var(--text); font-weight: 500; }
+  .prob-track {
+    height: 6px;
+    background: var(--bg);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .prob-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .prob-fill.parasitized { background: #c0392b; }
+  .prob-fill.uninfected  { background: var(--accent); }
+
+  .result-meta {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .disclaimer {
+    margin-top: 1rem;
+    padding: 10px 14px;
+    background: #fffbeb;
+    border: 1px solid #e5d48a;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #7a6a1a;
+    font-family: var(--mono);
+  }
+
+  #error-area {
+    display: none;
+    margin-top: 1rem;
+    padding: 12px 16px;
+    background: var(--danger-l);
+    border: 1px solid #f5c6c6;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--danger);
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1rem 2rem;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    MalariaDetect
+  </div>
+  <span class="badge">Classical ML — Feature Extraction</span>
+</header>
+
+<main>
+  <h1 class="page-title">Deteksi Parasit Malaria</h1>
+  <p class="page-sub">Upload gambar sel darah → ekstrak 84 fitur → prediksi model</p>
+
+  <div class="model-row" id="model-row">
+    <button class="model-btn active" data-model="Random Forest" onclick="selectModel(this)">Random Forest</button>
+    <button class="model-btn" data-model="SVM" onclick="selectModel(this)">SVM (RBF)</button>
+    <button class="model-btn" data-model="XGBoost" onclick="selectModel(this)">XGBoost</button>
+  </div>
+
+  <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+       ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+    <input type="file" id="file-input" accept="image/png,image/jpeg" onchange="onFileSelect(event)">
+    <div class="upload-icon">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </div>
+    <p class="upload-title">Klik atau drag & drop gambar sel darah</p>
+    <p class="upload-hint">PNG, JPG — maks. 10MB</p>
+  </div>
+
+  <div id="preview-area">
+    <div class="preview-header">
+      <span id="preview-filename">—</span>
+      <button class="btn-clear" onclick="clearAll()">Hapus</button>
+    </div>
+    <div class="preview-body">
+      <div class="preview-img-wrap">
+        <img id="preview-img" src="" alt="preview">
+      </div>
+      <div class="preview-info">
+        <div class="file-meta" id="file-meta"></div>
+        <button class="btn-predict" id="btn-predict" onclick="predict()">
+          <div class="spinner" id="spinner"></div>
+          <span id="btn-label">Analisis Gambar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="error-area"></div>
+
+  <div id="result-area">
+    <div class="result-header" id="result-header">hasil analisis</div>
+    <div class="result-body">
+      <div class="result-label" id="result-label">—</div>
+      <div class="result-conf"  id="result-conf">—</div>
+
+      <div class="prob-row">
+        <div class="prob-label-row">
+          <span>Uninfected</span>
+          <span id="prob-uninfected-val">—</span>
+        </div>
+        <div class="prob-track">
+          <div class="prob-fill uninfected" id="prob-uninfected-bar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="prob-row">
+        <div class="prob-label-row">
+          <span>Parasitized</span>
+          <span id="prob-parasitized-val">—</span>
+        </div>
+        <div class="prob-track">
+          <div class="prob-fill parasitized" id="prob-parasitized-bar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="result-meta" id="result-meta"></div>
+
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  MalariaDetect · NIH Cell Images Dataset · SVM / Random Forest / XGBoost + Feature Extraction (HOG, LBP, GLCM)
+</footer>
+
+<script>
+  const API_URL     = "http://127.0.0.1:8000";
+  let selectedModel = "Random Forest";
+  let selectedFile  = null;
+
+  function selectModel(btn) {
+    document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedModel = btn.dataset.model;
+  }
+
+  function onFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) loadFile(file);
+  }
+  function onDragOver(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.add('drag');
+  }
+  function onDragLeave() {
+    document.getElementById('drop-zone').classList.remove('drag');
+  }
+  function onDrop(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file) loadFile(file);
+  }
+
+  function loadFile(file) {
+    selectedFile = file;
+    hideResult();
+    hideError();
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      document.getElementById('preview-img').src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+
+    const kb = (file.size / 1024).toFixed(1);
+    document.getElementById('preview-filename').textContent = file.name;
+    document.getElementById('file-meta').innerHTML =
+      `<div><strong>Nama</strong>   ${file.name}</div>` +
+      `<div><strong>Ukuran</strong> ${kb} KB</div>` +
+      `<div><strong>Tipe</strong>   ${file.type}</div>`;
+
+    document.getElementById('preview-area').style.display = 'block';
+  }
+
+  async function predict() {
+    if (!selectedFile) return;
+
+    setLoading(true);
+    hideResult();
+    hideError();
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const res = await fetch(
+        `${API_URL}/predict?model_name=${encodeURIComponent(selectedModel)}`,
+        { method: 'POST', body: formData }
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      showResult(data);
+    } catch (err) {
+      showError(err.message.includes('Failed to fetch')
+        ? 'Tidak dapat terhubung ke server. Pastikan backend sudah dijalankan di http://127.0.0.1:8000'
+        : err.message
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function showResult(data) {
+    const isParasitized = data.label === "Parasitized";
+    const labelEl = document.getElementById('result-label');
+
+    labelEl.textContent  = data.label;
+    labelEl.className    = 'result-label ' + (isParasitized ? 'parasitized' : 'uninfected');
+
+    document.getElementById('result-conf').textContent =
+      `Confidence: ${data.confidence}%`;
+
+    const pU = data.probabilities.Uninfected;
+    const pP = data.probabilities.Parasitized;
+
+    document.getElementById('prob-uninfected-val').textContent  = pU.toFixed(1) + '%';
+    document.getElementById('prob-parasitized-val').textContent = pP.toFixed(1) + '%';
+
+    setTimeout(() => {
+      document.getElementById('prob-uninfected-bar').style.width  = pU + '%';
+      document.getElementById('prob-parasitized-bar').style.width = pP + '%';
+    }, 50);
+
+    document.getElementById('result-header').textContent = 'hasil analisis';
+    document.getElementById('result-meta').innerHTML =
+      `<span>model: ${data.model_used}</span>` +
+      `<span>fitur: 84 (HOG + LBP + GLCM + Color + Shape)</span>`;
+
+    document.getElementById('result-area').style.display = 'block';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-area');
+    el.textContent  = '⚠ ' + msg;
+    el.style.display = 'block';
+  }
+
+  function hideResult() {
+    document.getElementById('result-area').style.display = 'none';
+    document.getElementById('prob-uninfected-bar').style.width  = '0%';
+    document.getElementById('prob-parasitized-bar').style.width = '0%';
+  }
+
+  function hideError() {
+    document.getElementById('error-area').style.display = 'none';
+  }
+
+  function clearAll() {
+    selectedFile = null;
+    document.getElementById('preview-area').style.display = 'none';
+    document.getElementById('file-input').value = '';
+    hideResult();
+    hideError();
+  }
+
+  function setLoading(on) {
+    const btn     = document.getElementById('btn-predict');
+    const spinner = document.getElementById('spinner');
+    const label   = document.getElementById('btn-label');
+    btn.disabled         = on;
+    spinner.style.display = on ? 'block' : 'none';
+    label.textContent    = on ? 'Menganalisis...' : 'Analisis Gambar';
+  }
+</script>
+
+</body>
+</html>
